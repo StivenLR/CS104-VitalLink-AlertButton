@@ -1,19 +1,39 @@
-import time
-import RPi.GPIO as GPIO
-GPIO.setmode(GPIO.BOARD)
-GPIO.setup(7, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+import os
+import requests
+from dotenv import load_dotenv
 
-print("Alert button monitoring system is now active. Press Ctrl+C to stop.")
+# Load environment variables from the .env file
+load_dotenv()
 
-button_pressed = False
-try:
-    while True:
-        if GPIO.input(7) == GPIO.HIGH and not button_pressed:
-            print("Someone pressed the alert button!")
-            button_pressed = True
-        elif GPIO.input(7) == GPIO.LOW:
-            button_pressed = False
-        time.sleep(0.1)
-except KeyboardInterrupt:
-    print("\nMonitoring stopped.")
-    GPIO.cleanup()
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+CHAT_ID = os.getenv("CHAT_ID")
+
+
+def send_telegram_alert(message):
+  """Sends an automated message to your Telegram chat using the Telegram Bot API."""
+  url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+  payload = {"chat_id": CHAT_ID, "text": message}
+
+  try:
+    response = requests.post(url, json=payload)
+    if response.status_code == 200:
+      print("Alert sent successfully to Telegram!")
+    else:
+      print(f"Failed to send alert. Status code: {response.status_code}")
+      print(response.text)
+  except Exception as e:
+    print(f"An error occurred: {e}")
+
+
+def button_pressed():
+  """Triggered when the button is pressed."""
+  print("Button was pressed! Triggering alert...")
+  send_telegram_alert(
+      "Someone pressed the alert button."
+  )
+
+
+if __name__ == "__main__":
+  print("Waiting for button press...")
+  input("Press [Enter] to simulate pressing the button: ")
+  button_pressed()
